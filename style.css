@@ -1,0 +1,27 @@
+*{box-sizing:border-box}body{margin:0;background:#f4f3ed;color:#17271f;font:16px system-ui,sans-serif}main{max-width:650px;margin:auto;padding:25px 20px 40px}header{display:flex;justify-content:space-between;align-items:center;margin:8px 0 30px}.brand{font-size:12px;font-weight:800;letter-spacing:2px}.dot{color:#6c8743}h1{font-size:38px;letter-spacing:-1.5px;margin:10px 0}h2{font-size:23px;margin:5px 0 16px}h3{margin:0 0 6px;font-size:19px}.muted,small{color:#617064;font-size:14px}p{line-height:1.5}.hero{margin-bottom:28px}.card{background:#fff;border:1px solid #dce0d7;border-radius:18px;padding:20px;margin:14px 0}.day{display:flex;align-items:center;gap:18px}.number{font-size:32px;color:#8b9b74;font-weight:300}.grow{flex:1}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}button{font:inherit;cursor:pointer;border:1px solid #c8d0c0;border-radius:10px;background:transparent;color:inherit;padding:11px 16px;min-height:44px}.primary{background:#223c2d;color:#fff;border-color:#223c2d}.danger{color:#9b413a}.wide{width:100%}.badge{background:#eaf0df;color:#45632c;border-radius:20px;padding:5px 10px;font-size:12px}label{display:block;font-size:14px;margin:14px 0}input,select{display:block;width:100%;font:inherit;padding:12px;border:1px solid #bac6b5;border-radius:8px;background:#fff;color:#17271f;margin-top:6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}footer{color:#617064;font-size:12px;text-align:center;line-height:1.8;margin-top:40px}footer button{font-size:12px;border:0;text-decoration:underline}dialog{width:calc(100% - 30px);max-width:460px;border:0;border-radius:20px;padding:25px;max-height:90vh}dialog::backdrop{background:#17271f99}.notice{background:#fff1d6;padding:12px;border-radius:10px;font-size:14px}
+
+.counter{width:100%;margin-top:12px;background:#223c2d;color:white;border:0;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:manipulation}
+.counter strong{font-size:64px;line-height:1.2}.counter span{font-size:15px}.counter.complete{background:#e6efd9;color:#36562c}.counter.complete strong{font-size:36px}button:disabled{cursor:default;opacity:.65}.actions{align-items:center}select{min-height:50px;font-size:19px}
+
+.day-button{text-align:left;min-height:110px}.day-button strong{display:block;font-size:24px;margin-bottom:8px}.day-button small{display:block}.reset{margin-top:20px}button{touch-action:manipulation;min-height:48px}button:focus-visible{outline:3px solid #6c8743;outline-offset:3px}.grid>*{min-width:0}.counter.complete:disabled{opacity:1}
+
+:root{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+[data-theme="dark"] body{background:#111b16;color:#e8eee8}
+[data-theme="dark"] .card,[data-theme="dark"] dialog{background:#1d2b22;color:#e8eee8;border-color:#405446}
+[data-theme="dark"] .muted,[data-theme="dark"] small,[data-theme="dark"] footer{color:#b3c3b6}
+[data-theme="dark"] button{border-color:#6a806e}
+[data-theme="dark"] input,[data-theme="dark"] select{background:#142018;color:#e8eee8;border-color:#6a806e}
+[data-theme="dark"] .primary,[data-theme="dark"] .counter{background:#b2d39a;color:#142018;border-color:#b2d39a}
+[data-theme="dark"] .counter.complete{background:#30452f;color:#d7edc8}
+[data-theme="dark"] .danger{color:#ffb4a9}
+[data-theme="dark"] .badge{background:#30452f;color:#d7edc8}
+[data-theme="dark"] .notice{background:#493c24;color:#ffe0a8}
+[data-theme="dark"] .number,[data-theme="dark"] .dot{color:#b2d39a}
+.theme-toggle{display:block;margin:0 0 24px auto}
+
+.day-toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+.day-progress{margin:20px 0}.day-progress p{margin-bottom:8px}progress{display:block;width:100%;height:16px;accent-color:#45632c}.rest-timer{position:sticky;top:8px;z-index:5;background:#e6efd9;color:#17271f;border:1px solid #6c8743;border-radius:12px;padding:12px;box-shadow:0 3px 12px #0002}.rest-timer strong,.rest-timer span{display:block}.rest-timer strong{font-size:24px}.rest-timer button{margin-top:8px}[data-theme="dark"] .rest-timer{background:#30452f;color:#e8eee8}[data-theme="dark"] progress{accent-color:#b2d39a}[hidden]{display:none!important}
+
+.day-rest{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:20px 0}.day-rest>button{flex:1;min-height:58px}.day-rest label{margin:0;min-width:130px}

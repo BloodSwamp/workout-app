@@ -1,0 +1,3 @@
+clay-workouts*.json
+*.log
+__pycache__/
