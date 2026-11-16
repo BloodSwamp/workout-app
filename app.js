@@ -72,31 +72,34 @@ function dayRestControls(d){
 function exerciseCard(e,i){
  const remaining=Math.max(0,e.sets-e.completed);
  return '<article class="card"><h2>'+escapeHtml(e.name)+'</h2><p>'+escapeHtml(weightLabel(e))+' · '+e.sets+' sets × '+e.target+' '+(e.measure==='sec'?'seconds':'reps')+'</p>'+
+ '<label>'+(e.measure==='sec'?'Seconds completed':'Reps completed')+'<select data-field="actualSelection" data-i="'+i+'" aria-label="'+escapeHtml(e.name)+' '+(e.measure==='sec'?'seconds':'reps')+' completed" '+(!remaining?'disabled':'')+'>'+options(e.measure==='sec'?3600:30,1,selectedActual(e)).replace('<option value="0" >0</option>','')+'</select></label>'+
  (e.note?'<p class="notice">'+escapeHtml(e.note)+'</p>':'')+
- '<button class="counter '+(!remaining?'complete':'')+'" data-action="count" data-i="'+i+'" '+(!remaining?'disabled':'')+' aria-label="'+escapeHtml(e.name)+': '+(remaining?remaining+' sets remaining. Complete one set':'Done')+'"><strong>'+(remaining||'✓ Done')+'</strong><span>'+(remaining?(remaining===1?'set remaining':'sets remaining'):'All sets complete')+'</span></button>'+
+ '<button class="counter '+(!remaining?'complete':'')+'" data-action="count" data-i="'+i+'" '+(!remaining?'disabled':'')+' aria-label="'+escapeHtml(e.name)+': '+(remaining?remaining+' sets remaining. Log '+selectedActual(e)+' '+(e.measure==='sec'?'seconds':'reps')+' and complete one set':'Done')+'"><strong>'+(remaining||'✓ Done')+'</strong><span>'+(remaining?(remaining===1?'set remaining':'sets remaining'):'All sets complete')+'</span></button>'+
  '<div class="actions"><button data-action="undo" data-i="'+i+'" '+(!e.completed?'disabled':'')+'>Undo last set</button>'+(editingDay?'<button data-action="edit" data-i="'+i+'">Edit exercise</button><button class="danger" data-action="remove" data-i="'+i+'">Remove</button><button data-action="up" data-i="'+i+'" '+(!i?'disabled':'')+' aria-label="Move '+escapeHtml(e.name)+' up">↑ Move up</button><button data-action="down" data-i="'+i+'" '+(i===state.days[day].exercises.length-1?'disabled':'')+' aria-label="Move '+escapeHtml(e.name)+' down">↓ Move down</button>':'')+'</div></article>';
 }
 function render(){
+ if(progressionOpen){renderProgression();return;}
  if(day===null){
-  app.innerHTML='<button class="theme-toggle" data-action="theme" aria-pressed="'+(state.theme==='dark')+'">Dark mode: '+(state.theme==='dark'?'On':'Off')+'</button><div class="hero"><span class="badge">YOUR ROUTINE</span><h1>Make every set count.</h1><p class="muted">Choose a day. Your checklist is saved automatically.</p></div>'+state.days.map((d,i)=>'<button class="card day day-button wide" data-action="open" data-day="'+i+'"><span class="number">0'+(i+1)+'</span><span class="grow"><strong>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</strong><small>'+d.exercises.length+' exercises · '+d.exercises.reduce((n,e)=>n+Math.max(0,e.sets-e.completed),0)+' sets remaining</small></span><span aria-hidden="true">→</span></button>').join('');
+  app.innerHTML='<button class="theme-toggle" data-action="theme" aria-pressed="'+(state.theme==='dark')+'">Dark mode: '+(state.theme==='dark'?'On':'Off')+'</button><div class="hero"><span class="badge">YOUR ROUTINE</span><h1>Make every set count.</h1><p class="muted">Choose a day. Your checklist is saved automatically.</p></div><button class="wide" data-action="progression">View progression →</button>'+state.days.map((d,i)=>'<button class="card day day-button wide" data-action="open" data-day="'+i+'"><span class="number">0'+(i+1)+'</span><span class="grow"><strong>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</strong><small>'+d.exercises.length+' exercises · '+d.exercises.reduce((n,e)=>n+Math.max(0,e.sets-e.completed),0)+' sets remaining</small></span><span aria-hidden="true">→</span></button>').join('');
   return;
  }
  const d=state.days[day];
- app.innerHTML='<div class="day-toolbar"><button data-action="back">← All days</button><button data-action="editDay" aria-pressed="'+editingDay+'">'+(editingDay?'Done Editing':'Edit Day')+'</button></div><h1>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</h1><p class="muted">Tap the big number after each set. Progress stays saved until you reset this day.</p>'+dayProgress(d)+dayRestControls(d)+(d.resetUndo?'<div class="notice">Day reset. <button data-action="undoReset">Undo Reset Day</button></div>':'')+d.exercises.map(exerciseCard).join('')+(!d.exercises.length?'<p>No exercises yet. '+(editingDay?'Add one below.':'Tap Edit Day to add one.')+'</p>':'')+(editingDay?'<button class="primary wide" data-action="add">+ Add exercise</button>':'')+'<button class="wide danger reset" data-action="reset">Reset Day</button>';
+ app.innerHTML='<div class="day-toolbar"><button data-action="back">← All days</button><button data-action="editDay" aria-pressed="'+editingDay+'">'+(editingDay?'Done Editing':'Edit Day')+'</button></div><h1>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</h1><p class="muted">Choose your completed reps or seconds, then tap the big number to record each set. Progress stays saved until you reset this day.</p>'+dayProgress(d)+dayRestControls(d)+(d.resetUndo?'<div class="notice">Day reset. <button data-action="undoReset">Undo Reset Day</button></div>':'')+d.exercises.map(exerciseCard).join('')+(!d.exercises.length?'<p>No exercises yet. '+(editingDay?'Add one below.':'Tap Edit Day to add one.')+'</p>':'')+(editingDay?'<button class="primary wide" data-action="add">+ Add exercise</button>':'')+'<button class="wide danger reset" data-action="reset">Reset Day</button>';
 }
 app.onclick=event=>{
  const b=event.target.closest('button');if(!b||b.disabled)return;
  const a=b.dataset.action;
+ if(progressionClick(b))return;
  if(a==='theme'){state.theme=state.theme==='dark'?'light':'dark';applyTheme();save();render();return;}
  if(a==='open'){editingDay=false;day=Number(b.dataset.day);render();window.scrollTo(0,0);return;}
- if(a==='back'){editingDay=false;day=null;render();window.scrollTo(0,0);return;}
+ if(a==='back'){progressionOpen=false;editingDay=false;day=null;render();window.scrollTo(0,0);return;}
  if(a==='editDay'){editingDay=!editingDay;render();return;}
  const d=state.days[day],e=d.exercises[Number(b.dataset.i)];
  if(a==='startRest'){state.restTimer={endsAt:Date.now()+(d.restSeconds??180)*1000,name:d.name};save();renderTimer();}
- if(a==='count'){delete d.resetUndo;e.completed=Math.min(e.sets,e.completed+1);save();}
- if(a==='undo'){delete d.resetUndo;e.completed=Math.max(0,e.completed-1);save();}
- if(a==='reset'&&confirm('Reset completed sets for '+d.name+'? Weights, reps and exercise settings will stay the same.')){d.resetUndo=Object.fromEntries(d.exercises.map(x=>[x.id,x.completed]));d.exercises.forEach(x=>x.completed=0);delete state.restTimer;save();renderTimer();}
- if(a==='undoReset'&&d.resetUndo){d.exercises.forEach(x=>x.completed=d.resetUndo[x.id]??x.completed);delete d.resetUndo;save();}
+ if(a==='count'){recordSelectedSet(d,e);}
+ if(a==='undo'){clearResetRecovery(d);undoChecklistSet(e);save();}
+ if(a==='reset'&&confirm('Reset completed sets for '+d.name+'? Weights, reps and exercise settings will stay the same.')){d.resetUndo=Object.fromEntries(d.exercises.map(x=>[x.id,x.completed]));d.resetUndoSetIds=Object.fromEntries(d.exercises.map(x=>[x.id,x.progressionSetIds?.slice()??[]]));d.exercises.forEach(x=>{x.completed=0;x.progressionSetIds=[];});delete state.restTimer;save();renderTimer();}
+ if(a==='undoReset'&&d.resetUndo){d.exercises.forEach(x=>{x.completed=d.resetUndo[x.id]??x.completed;x.progressionSetIds=d.resetUndoSetIds?.[x.id]??[];});clearResetRecovery(d);save();}
  if(a==='up'||a==='down'){const i=Number(b.dataset.i),j=i+(a==='up'?-1:1);if(j>=0&&j<d.exercises.length){[d.exercises[i],d.exercises[j]]=[d.exercises[j],d.exercises[i]];save();}}
  if(a==='remove'&&confirm('Remove '+e.name+' from this day?')){d.exercises.splice(Number(b.dataset.i),1);save();}
  if(a==='add'||a==='edit'){
@@ -113,6 +116,17 @@ app.onclick=event=>{
  render();
 };
 app.onchange=event=>{
+ if(event.target.dataset?.field==='actualSelection'&&day!==null){
+  const e=state.days[day].exercises[Number(event.target.dataset.i)];
+  const actual=Number(event.target.value);
+  if(!e||!Number.isInteger(actual)||actual<1||actual>(e.measure==='sec'?3600:30))return;
+  const previous=structuredClone(state);e.actualSelection=actual;
+  if(!save())state=previous;
+  render();return;
+ }
+
+ if(event.target.id==='progressionMetric'){progressionMetric=event.target.value;render();return;}
+ if(event.target.id==='progressionExercise'){progressionSelection=event.target.value;render();return;}
  if(event.target.id!=='dayRestDuration'||day===null)return;
  const seconds=Number(event.target.value);
  if(!Number.isInteger(seconds)||seconds<15||seconds>1800)return;
@@ -124,6 +138,7 @@ document.querySelector('#exerciseForm').onsubmit=event=>{
  if(!data.name.trim())return;
  const list=state.days[day].exercises,previous=list.find(x=>x.id===editingId);
  const e={...previous,id:editingId||crypto.randomUUID(),name:data.name.trim(),equipment:data.equipment,sets:Number(data.sets),target:Number(data.target),weight:data.equipment==='Bodyweight'?0:Number(data.weight),measure:data.measure,note:previous?.note||'',completed:previous?.completed||0};
+ if(previous&&(previous.target!==e.target||previous.measure!==e.measure))delete e.actualSelection;
  if(editingId)list[list.findIndex(x=>x.id===editingId)]=e;else list.push(e);
  save();document.querySelector('#editor').close();render();
 };
@@ -157,6 +172,10 @@ function validateBackup(input){
  if(input.schemaVersion!==undefined&&input.schemaVersion!==2)throw new Error('Unsupported backup version.');
  const candidate=structuredClone(input);
  const ids=new Set();
+ if(candidate.setRecords===undefined)candidate.setRecords=[];
+ if(!Array.isArray(candidate.setRecords))throw new Error('Invalid progression records.');
+ const recordIds=new Set();
+ for(const r of candidate.setRecords){if(!validSetRecord(r)||recordIds.has(r.id))throw new Error('Invalid progression record.');recordIds.add(r.id);}
  for(const d of candidate.days){
   if(!d||typeof d.name!=='string'||!Array.isArray(d.exercises))throw new Error('Invalid workout day.');
   if(d.restSeconds!==undefined&&(!Number.isInteger(d.restSeconds)||d.restSeconds<15||d.restSeconds>1800))throw new Error('Invalid day rest duration.');
@@ -168,9 +187,11 @@ function validateBackup(input){
     e.completed=Array.isArray(logs)?logs.filter(x=>x?.done).length:0;
    }
    if(!Number.isInteger(e.completed)||e.completed<0||e.completed>100000|| (e.restSeconds!==undefined&&(!Number.isInteger(e.restSeconds)||e.restSeconds<0||e.restSeconds>1800)))throw new Error('Invalid progress or rest duration.');
+   if(e.actualSelection!==undefined&&(!Number.isInteger(e.actualSelection)||e.actualSelection<1||e.actualSelection>(e.measure==='sec'?3600:30)))throw new Error('Invalid selected reps or seconds.');
+   if(e.progressionSetIds!==undefined&&(!Array.isArray(e.progressionSetIds)||e.progressionSetIds.length>100000||e.progressionSetIds.some(id=>id!==null&&typeof id!=='string')))throw new Error('Invalid set links.');
    if(e.note!==undefined&&typeof e.note!=='string')throw new Error('Invalid exercise note.');
   }
-  delete d.resetUndo;
+  delete d.resetUndo;delete d.resetUndoSetIds;
  }
  delete candidate.restTimer;
  candidate.schemaVersion=2;
@@ -187,7 +208,7 @@ document.querySelector('#importFile').onchange=async event=>{
   // If either write fails, leave the running app and current primary data intact.
   localStorage.setItem(key+'-before-import',JSON.stringify(state));
   localStorage.setItem(key,JSON.stringify(candidate));
-  state=candidate;day=null;editingDay=false;applyTheme();render();renderTimer();
+  state=candidate;day=null;editingDay=false;progressionOpen=false;progressionSelection='';applyTheme();render();renderTimer();
   alert('Backup restored. Your previous data is saved on this device.');
  }catch(error){alert('Could not import backup: '+error.message);}
  finally{event.target.value='';}
@@ -199,6 +220,7 @@ for(const [name,max,step,value] of [['weight',200,.5,0],['sets',30,1,3],['target
  if(name!=='weight')select.querySelector('[value="0"]').remove();
  old.replaceWith(select);
 }
+setupProgression();
 render();
 // Leave data in localStorage; worker updates touch only cached application files.
 if('serviceWorker' in navigator){

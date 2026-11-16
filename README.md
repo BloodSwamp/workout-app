@@ -53,3 +53,17 @@ Additional checks: verify the progress bar responds to count/undo/reset; check t
 ## Android installation
 
 The project is prepared for GitHub Pages and Android Chrome installation. Nothing has been published. Follow [DEPLOYMENT.md](DEPLOYMENT.md) for setup, installation and future updates.
+
+## Progression records
+
+Each exercise has a native scrolling **Reps completed** picker with values **1–30**. Choose the reps you actually achieved, then tap the large remaining-sets counter: this saves one timestamped result at the exercise's saved weight and completes one checklist set, without opening a dialog. The picker initially uses your target (capped at 30), and remembers your selection per exercise across taps, navigation and refreshes. Timed exercises have a **Seconds completed** picker (1–3600) so carries can still record 60 seconds or another duration. Changing a target or measurement in Edit exercise resets the picker to that new target; changing the picker itself does not alter your routine target. Undo reverses the last checklist completion and its linked result.
+
+On the home page, **View progression** opens an exercise selector and Week / Month / Year / All time filters. These mean the last 7 / 30 / 365 local calendar days (including today), or all recorded dates. Results show first/latest and heaviest sets, a daily chart and every set's actual weight/reps. Switch the chart between weight and reps/seconds; bodyweight exercises chart reps/seconds. Dumbbell weights stay per hand. Separate exercises, equipment and measurement types have separate series.
+
+Changing a routine target from 32 kg to 34 kg does not rewrite earlier 32 kg results. Reset Day clears checklist counters but retains actual results. Undo last set removes the result linked to that checklist tap; Undo Reset restores the counts and links. Reordering or removing a routine exercise preserves its records; removed exercises remain available as archived series.
+
+Use **Add past set** to enter a result after the fact without changing today's counters. Each saved result can be edited or deleted from Progression. Deleting a result there leaves checklist counts alone. Existing checklist completions are not converted into invented reps or dates. Legacy session/history data remains in backups, and progression starts with the actual results you now record.
+
+Records save in the existing localStorage state as `setRecords`, with a timestamp, actual reps/seconds, weight and snapshots of the exercise name/equipment/day. Exercise `actualSelection` stores the picker draft, and checklist `progressionSetIds` link recorded sets to Undo; reset recovery also stores those links. No existing routine or legacy history records are removed. Export and import include progression, and older backups without records still work. All recording and charts work offline.
+
+To test: choose 5 reps on bench press at 32 kg and tap the counter; check the counter drops once and the result survives refresh. Change its target to 34 kg and log another set; verify both weights are shown in Progression. Switch time periods and chart type, edit a result, try Add past set, and check reset/Undo Reset retain history. `node tests/progression.test.cjs` runs the progression regression checks.

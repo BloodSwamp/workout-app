@@ -13,7 +13,7 @@ The existing responsive layout is unchanged: device-width viewport, 650px maximu
 1. Create or sign into a free GitHub account.
 2. Create a **public** repository named `workout-app`. GitHub Pages is free with public repositories on GitHub Free. The app code and default routines will be public; your locally saved progress is not uploaded by the app.
 3. Put the project source in that repository on `main`. Required website files:
-   - `index.html`, `style.css`, `app.js`, `manifest.json`, `sw.js`, `.nojekyll`
+   - `index.html`, `style.css`, `app.js`, `progression.js`, `manifest.json`, `sw.js`, `.nojekyll`
    - `icons/icon-192.png`, `icons/icon-512.png`
    - The SVG icon source, scripts, tests and documentation can also be committed.
    - Keep exported workout JSON files out of the repository. `.gitignore` excludes the app's default export filenames.
@@ -53,8 +53,8 @@ Once you have reviewed it, ask Codex to commit and push to `main`. GitHub Pages 
 For every release:
 
 1. Make the changes locally. Keep the storage key/schema compatible unless an explicit data migration is needed.
-2. Change `RELEASE` in `sw.js` (currently `v8`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
-3. Run `node --check app.js`, `node --check sw.js` and `node tests/pwa.test.cjs`. Also run `node tests/workout.test.cjs` for workout behaviour checks.
+2. Change `RELEASE` in `sw.js` (currently `v10`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
+3. Run `node --check app.js`, `node --check sw.js` and `node tests/pwa.test.cjs`. Also run `node tests/workout.test.cjs` and `node tests/progression.test.cjs` for workout and actual-result behaviour checks.
 4. Test in the browser; commit the code, icons and worker together; push to `main` after you approve publication.
 5. Wait for the Pages deployment. Open the phone app online so Chrome can check for the new worker. Returning to the app also checks for updates.
 6. After the new files download, **close all windows/tabs for this app** and reopen it. On Android remove the app from Recents and close any Chrome tabs showing the same app. A new release waits until the old windows close, so it cannot swap code in the middle of a workout. Merely refreshing an open app may keep the older worker active.
@@ -68,9 +68,11 @@ The cache contains a complete release and is used both online and offline. No re
 
 ```bash
 node --check app.js
+node --check progression.js
 node --check sw.js
 node tests/pwa.test.cjs
 node tests/workout.test.cjs
+node tests/progression.test.cjs
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 

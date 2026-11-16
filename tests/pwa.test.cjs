@@ -51,7 +51,7 @@ function worker(scope='https://example.github.io/workout-app/'){
 
 test('Offline shell, icons, explicit index and query launch work under a repository path',async()=>{
  const w=worker();await w.lifecycle('install');await w.lifecycle('activate');assert.ok(w.claimed);
- assert.equal(w.downloads.length,7);
+ assert.equal(w.downloads.length,8);
  for(const url of w.downloads){
   const pathname=new URL(url).pathname.replace('/workout-app/','');
   assert.ok(fs.existsSync(path.join(root,pathname||'index.html')));

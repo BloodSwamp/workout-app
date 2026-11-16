@@ -1,6 +1,6 @@
 // Dependency-free workout regression checks: node tests/workout.test.cjs
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
-const source=fs.readFileSync(require('node:path').join(__dirname,'..','app.js'),'utf8');
+const source=['progression.js','app.js'].map(name=>fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8')).join('\n');
 function boot(saved){
  const storage=new Map(saved||[]),app={innerHTML:''},form={reset(){},elements:{}},dialog={showModal(){},close(){}};
  const nodes={'#app':app,'#exerciseForm':form,'#editor':dialog,'#formTitle':{},'#cancelEdit':{},'#export':{},'#restTimer':{querySelector:()=>({})},'#stopRest':{},'#import':{},'#importFile':{}};
