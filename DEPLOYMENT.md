@@ -44,16 +44,22 @@ Storage is local to the browser profile and site origin, not a cloud account. No
 
 ## Future releases from Omarchy with Codex
 
-After this project is connected to your repository, an example request is:
+For routine updates, run this from the project folder:
 
-> Make [my requested change], keep saved workout data compatible, bump the service-worker release, run the checks, and show me the changes before publishing to my existing GitHub Pages repository.
+```bash
+./publish "Describe your update"
+```
 
-Once you have reviewed it, ask Codex to commit and push to `main`. GitHub Pages will publish the new version automatically. No Android APK or app store update is necessary.
+The command checks that you are on `main` and have no merge conflicts or previously staged changes, fetches GitHub's current `main`, and stops if it contains changes missing locally. It automatically raises the offline release number when shipped assets need an update, runs syntax/regression checks, commits project files, and pushes to `origin/main`. Without a message, it uses `Update workout app`. It leaves unrelated local files alone and never force-pushes. Git authentication uses your existing setup. If a push fails after the commit, rerun the command after fixing the connection or login.
+
+GitHub Pages deploys from the pushed branch. The command prints the app and deployment-status links. You can also ask Codex to publish the changes for you.
+
+The manual release process is:
 
 For every release:
 
 1. Make the changes locally. Keep the storage key/schema compatible unless an explicit data migration is needed.
-2. Change `RELEASE` in `sw.js` (currently `v11`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
+2. Change `RELEASE` in `sw.js` (currently `v12`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
 3. Run `node --check app.js`, `node --check sw.js` and `node tests/pwa.test.cjs`. Also run `node tests/workout.test.cjs` and `node tests/progression.test.cjs` for workout and actual-result behaviour checks.
 4. Test in the browser; commit the code, icons and worker together; push to `main` after you approve publication.
 5. Wait for the Pages deployment. Open the phone app online so Chrome can check for the new worker. Returning to the app also checks for updates.

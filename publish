@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+
+if [[ ${1:-} == --help ]]; then
+  echo 'Usage: ./publish ["Description of your update"]'
+  echo 'Checks the app, updates its offline release, commits project files, and pushes main.'
+  exit 0
+fi
+if (( $# > 1 )); then
+  echo 'Use one quoted commit message: ./publish "Describe your update"' >&2
+  exit 1
+fi
+if [[ $(git branch --show-current) != main ]]; then
+  echo 'Switch to main before publishing.' >&2
+  exit 1
+fi
+if [[ -n $(git ls-files -u) ]]; then
+  echo 'Resolve merge conflicts before publishing.' >&2
+  exit 1
+fi
+if ! git diff --cached --quiet; then
+  echo 'Commit or unstage your staged changes before publishing.' >&2
+  exit 1
+fi
+
+echo 'Checking GitHub for newer changes…'
+git fetch origin main
+if ! git merge-base --is-ancestor origin/main HEAD; then
+  echo 'GitHub has changes that are not in this checkout. Integrate them before publishing.' >&2
+  exit 1
+fi
+
+# A changed offline asset needs a release newer than the published worker.
+if ! git diff --quiet origin/main -- index.html app.js progression.js style.css manifest.json sw.js icons; then
+  node <<'NODE'
+const fs = require('node:fs');
+const {execFileSync} = require('node:child_process');
+const source = fs.readFileSync('sw.js', 'utf8');
+const published = execFileSync('git', ['show', 'origin/main:sw.js'], {encoding: 'utf8'});
+const pattern = /const RELEASE = 'v(\d+)';/;
+const local = source.match(pattern), remote = published.match(pattern);
+if (!local || !remote) throw new Error('Cannot determine the offline release number.');
+const version = Math.max(Number(local[1]), Number(remote[1]) + 1);
+if (!Number.isSafeInteger(version)) throw new Error('Invalid offline release number.');
+fs.writeFileSync('sw.js', source.replace(pattern, `const RELEASE = 'v${version}';`));
+console.log(`Offline release: v${version}`);
+NODE
+fi
+
+echo 'Running app checks…'
+node --check app.js
+node --check progression.js
+node --check sw.js
+node --test tests/*.test.cjs
+git diff --check
+
+# Publish the project's source and docs; leave unrelated local files alone.
+git add -- app.js progression.js index.html style.css manifest.json sw.js icons scripts tests publish README.md DEPLOYMENT.md .gitignore .nojekyll
+if ! git diff --cached --quiet; then
+  git diff --cached --stat
+  git commit -m "${1:-Update workout app}"
+fi
+git push origin main
+echo
+echo 'Pushed to GitHub. GitHub Pages will deploy the update.'
+echo 'App: https://bloodswamp.github.io/workout-app/'
+echo 'Deployment status: https://github.com/BloodSwamp/workout-app/actions'
+echo 'After deployment, open the app online, close all app windows/tabs, and reopen it.'

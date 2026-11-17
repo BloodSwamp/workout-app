@@ -11,6 +11,18 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Open http://localhost:8000 in a modern browser. Stop the server with Ctrl+C. Keep using the same browser profile, hostname and port to access the same saved data.
 
+## Publish updates
+
+From this project folder, run:
+
+```bash
+./publish "Describe your update"
+```
+
+Or use `./publish` for the default commit message. It checks for newer GitHub changes, updates the offline release when needed, runs the app checks, commits project source/docs, and pushes `main`. It uses your existing GitHub login. Unrelated local files are left alone. A failed check stops publication; a rejected push can be retried after fixing the connection or authentication.
+
+After GitHub Pages deploys, open the app online, close all its browser tabs and installed app windows, and reopen it to activate the update.
+
 ## Progress and editing
 
 Progress saves automatically in localStorage, including across refreshes and day navigation. Reset Day asks for confirmation and clears only that day's completed counts. Exercise editing supports name, equipment, weight, total sets, reps or seconds. Edits preserve completed counts and notes. If total sets are reduced below the completed count, the exercise shows Done; Undo can reduce that count. Tap Edit Day at the top of a day to reveal exercise editing, removal and Add exercise. Tap Done Editing to return to the uncluttered checklist. Counters and Undo stay available. Dumbbell weights are per hand. Seconds in exercise targets remain targets, separate from the optional rest timer.
@@ -71,7 +83,7 @@ To test: choose 5 reps on bench press at 32 kg and tap the counter; check the co
 
 ## Completing workouts across days
 
-Each routine has its own open workout, created automatically when you record a set. Continue yesterday’s incomplete Push workout today: its counters and linked sets remain part of the same session across refreshes and navigation. The checklist shows the workout number and whether it is in progress.
+Each routine has its own open workout, created automatically when you record a set. Continue yesterday’s incomplete Push workout today: its counters and linked sets remain part of the same session across refreshes and navigation. The Complete workout button sits at the bottom of the checklist.
 
 Tap **Complete workout** when finished. Confirming saves that session as completed and clears only that routine’s counters and set undo links, preparing the next workout number. Exercise settings, picker values, and all recorded results remain saved. You can finish with some sets skipped; the confirmation makes this explicit. Empty workouts cannot be completed. A rest timer for that routine is dismissed.
 

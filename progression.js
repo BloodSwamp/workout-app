@@ -238,9 +238,7 @@ function undoWorkoutCompletion(d){
  if(!save()){state=previous;return false;}return true;
 }
 function workoutControls(d){
- const session=state.workoutSessions.find(s=>s.id===d.sessionId);
- const next=1+Math.max(0,...state.workoutSessions.filter(s=>s.dayId===d.id).map(s=>s.number));
- return '<section class="card"><p><strong>'+escapeHtml(d.name)+' workout #'+(session?.number??next)+'</strong> · '+(session?'In progress':'Ready to start')+'</p><p class="muted">Continue over as many days as you need. Complete this workout when you are finished to save it to progression and prepare the next one.</p><button class="primary wide" data-action="completeWorkout" '+(workoutHasProgress(d)?'':'disabled')+'>Complete workout</button>'+(d.completionUndo?'<p>Workout saved. Your next workout is ready.</p><button data-action="undoCompletion">Undo completion</button>':'')+'</section>';
+ return '<button class="primary wide" data-action="completeWorkout" '+(workoutHasProgress(d)?'':'disabled')+'>Complete workout</button>'+(d.completionUndo?'<button class="wide" data-action="undoCompletion">Undo completion</button>':'');
 }
 function validateWorkouts(data){
  const migrating=data.workoutSessions===undefined;
