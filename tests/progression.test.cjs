@@ -8,7 +8,7 @@ const source=['progression.js','app.js'].map(name=>fs.readFileSync(path.join(__d
 function boot(saved){
  const storage=new Map(saved||[]),nodes={},alerts=[];
  const control=()=>({value:'',disabled:false,tagName:'INPUT',options:[],add(option){this.options.push(option);}});
- const form=()=>({elements:Object.fromEntries(['name','equipment','sets','target','measure','weight','actual','performedAt'].map(n=>[n,control()])),reset(){},onsubmit:null});
+ const form=()=>({elements:Object.fromEntries(['name','equipment','sets','target','measure','weight','actual','performedAt','sessionId'].map(n=>[n,control()])),reset(){},onsubmit:null});
  for(const id of ['exerciseForm','recordForm'])nodes['#'+id]=form();
  for(const id of ['editor','recordDialog'])nodes['#'+id]={open:false,showModal(){this.open=true;},close(){this.open=false;}};
  const element=()=>({innerHTML:'',textContent:'',content:'',hidden:false,value:'',querySelector:selector=>get(selector),replaceWith(){}});
@@ -57,12 +57,12 @@ test('Counter records selected reps at the saved weight exactly once without a d
 });
 
 test('Changing next workout weight never rewrites earlier results',()=>{
- const a=boot();logBench(a,5);a.click('reset');
- a.run('state.days[0].exercises[1].weight=34;save()');choose(a,1,6);a.click('count',1);
+ const a=boot();logBench(a,5);a.click('completeWorkout');
+ a.run('state.days[0].exercises[1].weight=34;save()');choose(a,1,6);a.click('count',1);a.click('completeWorkout');
  assert.equal(a.run('state.setRecords[0].weight'),32);
  assert.equal(a.run('state.setRecords[1].weight'),34);
  a.click('back');a.click('progression');a.run('progressionSelection=resultKey(state.days[0].exercises[1]);render()');
- assert.match(a.nodes['#app'].innerHTML,/First in period: 32 kg \/ hand × 5 reps/);
+ assert.match(a.nodes['#app'].innerHTML,/First: 32 kg \/ hand × 5 reps/);
  assert.match(a.nodes['#app'].innerHTML,/Latest: 34 kg \/ hand × 6 reps/);
 });
 
@@ -155,17 +155,21 @@ test('Changing target reps resets the next picker default without changing histo
  assert.equal(a.run('state.setRecords[0].actual'),5);
 });
 
-test('Week, month, year and all-time filters use local calendar boundaries',()=>{
- const a=boot();logBench(a);a.context.now=new Date(2026,10,16,12);
- a.run(`const template=state.setRecords[0];state.setRecords=[0,6,7,29,30,364,365].map((days,i)=>{const d=new Date(now);d.setDate(d.getDate()-days);d.setHours(0,0,0,0);return {...template,id:'test-'+i,performedAt:d.toISOString()};});`);
- for(const [range,count] of [['week',2],['month',4],['year',6],['all',7]])assert.equal(a.run(`progressionRecords(resultKey(state.setRecords[0]),'${range}',now).length`),count);
+test('Progression compares the last 10 completed workouts rather than calendar days',()=>{
+ const a=boot();
+ for(let i=0;i<12;i++){logBench(a);a.click('completeWorkout');}
+ logBench(a);
+ assert.equal(a.run("progressionRecords(resultKey(state.setRecords[0]),'last10').length"),10);
+ assert.equal(a.run("progressionRecords(resultKey(state.setRecords[0]),'all').length"),12);
+ assert.equal(a.run("state.workoutSessions.at(-1).completedAt"),undefined);
+ assert.equal(a.run("state.workoutSessions.at(-1).number"),13);
 });
 
 test('Rep charts and archived equipment/measurement series remain independent',()=>{
- const a=boot();logBench(a,5);choose(a,1,7);a.click('count',1);
+ const a=boot();logBench(a,5);choose(a,1,7);a.click('count',1);a.click('completeWorkout');
  a.click('back');a.click('progression');a.run('progressionSelection=resultKey(state.setRecords[0]);render()');
  a.run("app.onchange({target:{id:'progressionMetric',value:'actual'}})");
- assert.match(a.nodes['#app'].innerHTML,/Most reps per set each day/);
+ assert.match(a.nodes['#app'].innerHTML,/Most reps per set per completed workout/);
  assert.match(a.nodes['#app'].innerHTML,/: 7/);
  a.run("state.setRecords.push({...state.setRecords[0],id:'kb',equipment:'Kettlebell'})");
  assert.equal(a.run("progressionRecords(resultKey(state.setRecords[0]),'all').length"),2);
@@ -185,5 +189,118 @@ test('Import restores results and picker choices',async()=>{
  await a.nodes['#importFile'].onchange({target:{files:[{size:100,text:async()=>JSON.stringify(backup)}],value:'backup'}});
  assert.equal(a.run('state.setRecords[0].actual'),5);
  assert.equal(a.run('state.days[0].exercises[1].actualSelection'),5);
+ assert.equal(a.run('state.days[0].exercises[1].completed'),1);
+});
+
+
+test('A workout spans dates and reloads, and remains out of completed progression until finished',()=>{
+ let a=boot();logBench(a,5);
+ const id=a.run('state.days[0].sessionId');
+ a.run("state.setRecords[0].performedAt='2026-11-16T10:00:00.000Z';save()");
+ a=boot(a.storage);logBench(a,4);
+ assert.equal(a.run('state.setRecords[1].sessionId'),id);
+ assert.equal(a.run('state.days[0].exercises[1].completed'),2);
+ assert.equal(a.run("progressionRecords(resultKey(state.setRecords[0]),'all').length"),0);
+ a.click('completeWorkout');
+ assert.equal(a.run("progressionRecords(resultKey(state.setRecords[0]),'all').length"),2);
+ assert.equal(a.run('state.days[0].exercises[1].completed'),0);
+ assert.equal(a.run('state.days[0].exercises[1].weight'),32);
+ a.click('back');a.click('progression');a.run('progressionSelection=resultKey(state.setRecords[0]);render()');
+ assert.match(a.nodes['#app'].innerHTML,/Push workout #1/);
+ assert.equal((a.nodes['#app'].innerHTML.match(/class="chart-point"/g)||[]).length,1);
+});
+
+test('Completion cancellation, reload recovery, and the next session preserve recorded history',()=>{
+ let a=boot();logBench(a,5);const id=a.run('state.days[0].sessionId');
+ a.context.accept=false;a.click('completeWorkout');
+ assert.equal(a.run('state.days[0].sessionId'),id);
+ a.context.accept=true;a.click('completeWorkout');a=boot(a.storage);a.click('open');
+ assert.match(a.nodes['#app'].innerHTML,/Undo completion/);
+ a.click('undoCompletion');assert.equal(a.run('state.days[0].sessionId'),id);
+ assert.equal(a.run('state.days[0].exercises[1].completed'),1);
+ a.click('undo',1);assert.equal(a.run('state.setRecords.length'),0);
+ a.click('count',1);a.click('completeWorkout');a.click('count',1);
+ assert.notEqual(a.run('state.days[0].sessionId'),id);
+ assert.equal(a.run('state.workoutSessions.at(-1).number'),2);
+ assert.equal(a.run('state.days[0].completionUndo'),undefined);
+ a.click('undoCompletion');assert.equal(a.run('state.days[0].exercises[1].completed'),1);
+ assert.equal(a.run('state.setRecords.length'),2);
+});
+
+test('Completion does not touch another routine and empty workouts cannot complete',()=>{
+ const a=boot();a.click('open');a.click('completeWorkout');
+ assert.equal(a.run('state.workoutSessions.length'),0);
+ logBench(a);a.click('back');a.click('open',1);a.click('count');
+ const pullId=a.run('state.days[1].sessionId');
+ a.click('back');a.click('open');a.click('completeWorkout');
+ assert.equal(a.run('state.days[1].sessionId'),pullId);
+ assert.equal(a.run('state.days[1].exercises[0].completed'),1);
+ assert.equal(a.run('state.workoutSessions.filter(s=>s.completedAt).length'),1);
+});
+
+test('Failed completion and undo writes roll back session status, counters and links',()=>{
+ const a=boot();logBench(a);const before=stateOf(a);a.failSave();a.click('completeWorkout');
+ assert.deepEqual(stateOf(a),before);
+ const b=boot();logBench(b);b.click('completeWorkout');const completed=stateOf(b);b.failSave();b.click('undoCompletion');
+ assert.deepEqual(stateOf(b),completed);
+});
+
+test('Migration attaches only current checklist links, retaining unknown earlier results',()=>{
+ const a=boot();logBench(a);const old=stateOf(a);
+ delete old.workoutSessions;for(const d of old.days){delete d.id;delete d.sessionId;}
+ delete old.setRecords[0].sessionId;
+ old.setRecords.push({...old.setRecords[0],id:'old-unlinked',performedAt:'2026-11-15T12:00:00Z'});
+ let b=boot([['clay-training-v1',JSON.stringify(old)]]);
+ assert.equal(b.run('state.setRecords[0].sessionId'),b.run('state.days[0].sessionId'));
+ assert.equal(b.run('state.setRecords[1].sessionId'),undefined);
+ assert.equal(b.run("progressionRecords(resultKey(state.setRecords[0]),'legacy').length"),1);
+ const id=b.run('state.days[0].sessionId');b=boot(b.storage);
+ assert.equal(b.run('state.days[0].sessionId'),id);
+ assert.equal(b.run('state.workoutSessions.length'),1);
+});
+
+test('Session backup validation rejects missing, duplicate and mismatched references',()=>{
+ const a=boot();logBench(a);a.click('completeWorkout');logBench(a);
+ const roundtrip=a.run('JSON.stringify(validateBackup(structuredClone(state)))');
+ const b=boot([['clay-training-v1',roundtrip]]);
+ assert.equal(b.run('state.workoutSessions.length'),2);
+ assert.equal(b.run('state.days[0].exercises[1].completed'),1);
+ for(const change of [
+  "bad.setRecords[0].sessionId='missing'",
+  "bad.workoutSessions.push(bad.workoutSessions[0])",
+  "bad.days[1].sessionId=bad.days[0].sessionId",
+  "bad.workoutSessions[1].number=bad.workoutSessions[0].number",
+  "bad.days[0].sessionId=bad.workoutSessions[0].id"
+ ])assert.throws(()=>a.run('{const bad=structuredClone(state);'+change+';validateBackup(bad)}'));
+});
+
+test('Editing a session result preserves its session; past sets can target a completed workout',()=>{
+ const a=boot();logBench(a);a.click('completeWorkout');
+ a.click('back');a.click('progression');a.run('progressionSelection=resultKey(state.setRecords[0])');
+ const id=a.run('state.setRecords[0].id'),sessionId=a.run('state.setRecords[0].sessionId');
+ a.click('editRecord',0,{id});a.result(8,32);
+ assert.equal(a.run('state.setRecords[0].sessionId'),sessionId);
+ a.click('addPastSet');a.context.formData={actual:'7',weight:'32',performedAt:new Date().toISOString(),sessionId};
+ a.nodes['#recordForm'].onsubmit({preventDefault(){},target:a.nodes['#recordForm']});
+ assert.equal(a.run('state.setRecords[1].sessionId'),sessionId);
+ assert.equal(a.run('state.days[0].exercises[1].completed'),0);
+});
+
+
+test('Two workouts on the same date produce two points, and unassigned results cannot complete an empty day',()=>{
+ const a=boot();logBench(a);a.click('completeWorkout');logBench(a);a.click('completeWorkout');
+ a.run("for(const r of state.setRecords)r.performedAt='2026-11-17T12:00:00Z'");
+ a.click('back');a.click('progression');a.run('progressionSelection=resultKey(state.setRecords[0]);render()');
+ assert.equal((a.nodes['#app'].innerHTML.match(/class="chart-point"/g)||[]).length,2);
+ a.run("state.setRecords.push({...state.setRecords[0],id:'unassigned',sessionId:undefined});save()");
+ a.click('back');a.click('open',1);a.click('completeWorkout');
+ assert.equal(a.run('state.workoutSessions.length'),2);
+ assert.equal(a.run('workoutHasProgress(state.days[1])'),false);
+});
+
+test('Reload does not reassign a result deliberately moved to Earlier results',()=>{
+ let a=boot();logBench(a);a.run('delete state.setRecords[0].sessionId;save()');
+ a=boot(a.storage);
+ assert.equal(a.run('state.setRecords[0].sessionId'),undefined);
  assert.equal(a.run('state.days[0].exercises[1].completed'),1);
 });

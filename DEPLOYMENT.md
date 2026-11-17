@@ -53,7 +53,7 @@ Once you have reviewed it, ask Codex to commit and push to `main`. GitHub Pages 
 For every release:
 
 1. Make the changes locally. Keep the storage key/schema compatible unless an explicit data migration is needed.
-2. Change `RELEASE` in `sw.js` (currently `v10`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
+2. Change `RELEASE` in `sw.js` (currently `v11`) to a new unique value whenever shipped HTML, JS, CSS, manifest or icons change. Include any new offline assets in `ASSETS`.
 3. Run `node --check app.js`, `node --check sw.js` and `node tests/pwa.test.cjs`. Also run `node tests/workout.test.cjs` and `node tests/progression.test.cjs` for workout and actual-result behaviour checks.
 4. Test in the browser; commit the code, icons and worker together; push to `main` after you approve publication.
 5. Wait for the Pages deployment. Open the phone app online so Chrome can check for the new worker. Returning to the app also checks for updates.
@@ -78,6 +78,6 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Visit `http://localhost:8000` on the Omarchy desktop. Phone installation needs the published HTTPS URL; an ordinary `http://192.168...` LAN address is not a substitute.
 
-PWA tests cover manifest fields, PNG dimensions, asset existence, relative repository paths, offline launch (including `index.html` and query strings), cache isolation, interrupted installation, root-domain hosting and non-app requests. Workout checks cover persistence/migration, count/undo/reset, editing, themes, ordering, reset recovery, manual rest timers and backup validation/import. These use a simulated DOM/worker rather than a real browser. Chrome/Pixel layout, installability, an actual update lifecycle and airplane-mode startup need the device checks above.
+PWA tests cover manifest fields, PNG dimensions, asset existence, relative repository paths, offline launch (including `index.html` and query strings), cache isolation, interrupted installation, root-domain hosting and non-app requests. Workout checks cover persistence/migration, count/undo/reset, editing, themes, ordering, reset recovery, manual rest timers, multi-day workout completion and recovery, workout-based progression, and backup validation/import. These use a simulated DOM/worker rather than a real browser. Chrome/Pixel layout, installability, an actual update lifecycle and airplane-mode startup need the device checks above.
 
 Icon PNGs can be rebuilt with `python3 scripts/generate-icons.py` (standard library only). Their source design is in `icons/icon.svg`; keep the generator's rectangles in sync when changing the SVG. The artwork fits within the maskable safe region so Android can crop the background to its launcher icon shape.

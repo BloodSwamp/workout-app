@@ -84,7 +84,7 @@ function render(){
   return;
  }
  const d=state.days[day];
- app.innerHTML='<div class="day-toolbar"><button data-action="back">← All days</button><button data-action="editDay" aria-pressed="'+editingDay+'">'+(editingDay?'Done Editing':'Edit Day')+'</button></div><h1>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</h1><p class="muted">Choose your completed reps or seconds, then tap the big number to record each set. Progress stays saved until you reset this day.</p>'+dayProgress(d)+dayRestControls(d)+(d.resetUndo?'<div class="notice">Day reset. <button data-action="undoReset">Undo Reset Day</button></div>':'')+d.exercises.map(exerciseCard).join('')+(!d.exercises.length?'<p>No exercises yet. '+(editingDay?'Add one below.':'Tap Edit Day to add one.')+'</p>':'')+(editingDay?'<button class="primary wide" data-action="add">+ Add exercise</button>':'')+'<button class="wide danger reset" data-action="reset">Reset Day</button>';
+ app.innerHTML='<div class="day-toolbar"><button data-action="back">← All days</button><button data-action="editDay" aria-pressed="'+editingDay+'">'+(editingDay?'Done Editing':'Edit Day')+'</button></div><h1>'+escapeHtml(d.name==='Legs & core'?'Legs & Core':d.name)+'</h1><p class="muted">Choose your completed reps or seconds, then tap the big number to record each set. Your workout stays open across days until you complete it.</p>'+dayProgress(d)+workoutControls(d)+dayRestControls(d)+(d.resetUndo?'<div class="notice">Day reset. <button data-action="undoReset">Undo Reset Day</button></div>':'')+d.exercises.map(exerciseCard).join('')+(!d.exercises.length?'<p>No exercises yet. '+(editingDay?'Add one below.':'Tap Edit Day to add one.')+'</p>':'')+(editingDay?'<button class="primary wide" data-action="add">+ Add exercise</button>':'')+'<button class="wide danger reset" data-action="reset">Reset Day</button>';
 }
 app.onclick=event=>{
  const b=event.target.closest('button');if(!b||b.disabled)return;
@@ -96,9 +96,14 @@ app.onclick=event=>{
  if(a==='editDay'){editingDay=!editingDay;render();return;}
  const d=state.days[day],e=d.exercises[Number(b.dataset.i)];
  if(a==='startRest'){state.restTimer={endsAt:Date.now()+(d.restSeconds??180)*1000,name:d.name};save();renderTimer();}
+ if(a==='completeWorkout'){
+  const incomplete=d.exercises.some(x=>x.completed<x.sets);
+  if(workoutHasProgress(d)&&confirm('Complete '+d.name+' workout'+(incomplete?' with some sets unfinished':'')+'? This saves the workout to progression and clears its counters for next time.')){completeWorkout(d);renderTimer();}
+ }
+ if(a==='undoCompletion'){undoWorkoutCompletion(d);renderTimer();}
  if(a==='count'){recordSelectedSet(d,e);}
  if(a==='undo'){clearResetRecovery(d);undoChecklistSet(e);save();}
- if(a==='reset'&&confirm('Reset completed sets for '+d.name+'? Weights, reps and exercise settings will stay the same.')){d.resetUndo=Object.fromEntries(d.exercises.map(x=>[x.id,x.completed]));d.resetUndoSetIds=Object.fromEntries(d.exercises.map(x=>[x.id,x.progressionSetIds?.slice()??[]]));d.exercises.forEach(x=>{x.completed=0;x.progressionSetIds=[];});delete state.restTimer;save();renderTimer();}
+ if(a==='reset'&&confirm('Reset completed sets for '+d.name+'? This only resets counters; it does not complete the workout. Recorded results and exercise settings stay saved.')){delete d.completionUndo;d.resetUndo=Object.fromEntries(d.exercises.map(x=>[x.id,x.completed]));d.resetUndoSetIds=Object.fromEntries(d.exercises.map(x=>[x.id,x.progressionSetIds?.slice()??[]]));d.exercises.forEach(x=>{x.completed=0;x.progressionSetIds=[];});delete state.restTimer;save();renderTimer();}
  if(a==='undoReset'&&d.resetUndo){d.exercises.forEach(x=>{x.completed=d.resetUndo[x.id]??x.completed;x.progressionSetIds=d.resetUndoSetIds?.[x.id]??[];});clearResetRecovery(d);save();}
  if(a==='up'||a==='down'){const i=Number(b.dataset.i),j=i+(a==='up'?-1:1);if(j>=0&&j<d.exercises.length){[d.exercises[i],d.exercises[j]]=[d.exercises[j],d.exercises[i]];save();}}
  if(a==='remove'&&confirm('Remove '+e.name+' from this day?')){d.exercises.splice(Number(b.dataset.i),1);save();}
@@ -193,6 +198,7 @@ function validateBackup(input){
   }
   delete d.resetUndo;delete d.resetUndoSetIds;
  }
+ validateWorkouts(candidate);
  delete candidate.restTimer;
  candidate.schemaVersion=2;
  candidate.confirmedRoutineSettings=true;

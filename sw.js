@@ -1,5 +1,5 @@
 // Bump RELEASE whenever any shipped HTML, JS, CSS, manifest or icon changes.
-const RELEASE = 'v10';
+const RELEASE = 'v11';
 // CacheStorage is origin-wide; isolate this app from other GitHub Pages projects.
 const CACHE_PREFIX = 'clay-training:' + self.registration.scope + ':';
 const CACHE_NAME = CACHE_PREFIX + RELEASE;
